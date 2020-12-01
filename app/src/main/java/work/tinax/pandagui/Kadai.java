@@ -14,14 +14,17 @@
 
 package work.tinax.pandagui;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
-public class Kadai {
+public class Kadai implements Serializable {
 	private final String id;
 	private final String lectureName;
 	private final String kadaiName;
 	private final String description;
 	private final LocalDateTime due;
+
+	private static final long serialVersionUID = 1L;
 	
 	public Kadai(String id, String kadaiName, String lectureName, String description, LocalDateTime due) {
 		this.id = id;

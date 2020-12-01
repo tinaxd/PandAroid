@@ -36,8 +36,14 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Array;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -55,10 +61,12 @@ import work.tinax.pandagui.SiteIdInfo;
 
 public class MainActivity extends AppCompatActivity {
 
-    private List<Kadai> kadaiList;
+    private ArrayList<Kadai> kadaiList;
     private KadaiAdapter kadaiAdapter;
 
     private Executor networkExecutor;
+
+    private LocalDateTime updateTime;
 
     private void toggleButtons(boolean enabled) {
         ((Button)findViewById(R.id.updateButton)).setEnabled(enabled);
@@ -96,7 +104,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         final Handler mainHandler = new Handler(getMainLooper());
-                        List<Kadai> kadais = new ArrayList<>();
+                        final ArrayList<Kadai> kadais = new ArrayList<>();
                         LocalDateTime now = LocalDateTime.now();
                         Log.i("update kadai", "PandA access starts");
                         mainHandler.post(new Runnable() {
@@ -157,6 +165,11 @@ public class MainActivity extends AppCompatActivity {
                             public void run() {
                                 Toast.makeText(getApplicationContext(), "課題更新完了. 何も表示されない場合は本当に課題がないか, ログイン情報が間違っています.", Toast.LENGTH_LONG)
                                         .show();
+                                updateTime = LocalDateTime.now();
+                                showUpdateTime(updateTime);
+                                Log.i("update kadai", "saving kadai list to cache");
+                                saveKadaiList(kadais, updateTime);
+                                Log.i("update kadai", "saved kadai list to cache");
                             }
                         });
                     }
@@ -173,6 +186,26 @@ public class MainActivity extends AppCompatActivity {
         });
 
         //updateKadaiList(makeSampleKadai());
+
+        if (updateKadaiListFromCache()) {
+            Toast.makeText(getApplicationContext(), "キャッシュを読み込みました", Toast.LENGTH_LONG)
+                    .show();
+        }
+    }
+
+    private void showUpdateTime(LocalDateTime time) {
+        ((TextView)findViewById(R.id.listUpdateTime)).setText("取得: " + time.format(DateTimeFormatter.ofPattern("y/M/d HH:mm")));
+    }
+
+    public boolean updateKadaiListFromCache() {
+        KadaisWithTime kadaist = loadKadaiList();
+        if (kadaist == null) {
+            return false;
+        }
+        updateKadaiList(kadaist.getKadais());
+        updateTime = kadaist.getTime();
+        showUpdateTime(updateTime);
+        return true;
     }
 
     public void updateKadaiList(List<Kadai> kadais) {
@@ -252,7 +285,37 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    private void updateKadai() {
+    private final String CACHE_FILENAME = "kadaiCache";
 
+    private void saveKadaiList(KadaisWithTime kadaist) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(
+                getApplicationContext().openFileOutput(CACHE_FILENAME, Context.MODE_PRIVATE)
+        )) {
+            oos.writeObject(kadaist);
+            Log.i("saveKadaiList", "wrote kadai list");
+        } catch (IOException e) {
+            e.printStackTrace();
+            Log.d("saveKadaiList", e.getMessage());
+        }
+    }
+
+    private void saveKadaiList(ArrayList<Kadai> kadais, LocalDateTime updateTime) {
+        saveKadaiList(new KadaisWithTime(kadais, updateTime));
+    }
+
+    public KadaisWithTime loadKadaiList() {
+        try (ObjectInputStream ois = new ObjectInputStream(
+                getApplicationContext().openFileInput(CACHE_FILENAME)
+        )) {
+            KadaisWithTime kadais = (KadaisWithTime) ois.readObject();
+            Log.i("loadKadaiList", "find kadai list in cache");
+            return kadais;
+        } catch (IOException | ClassNotFoundException e) {
+            Log.i("loadKadaiList", "kadai cache not found");
+            return null;
+        } catch (ClassCastException e) {
+            Log.i("loadKadaiList", "wrong class. cache layout is too old");
+            return null;
+        }
     }
 }
