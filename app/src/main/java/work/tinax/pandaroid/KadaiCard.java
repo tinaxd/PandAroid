@@ -14,6 +14,7 @@
 
 package work.tinax.pandaroid;
 
+import android.graphics.Color;
 import android.view.View;
 import android.widget.TextView;
 
@@ -47,7 +48,30 @@ public class KadaiCard extends RecyclerView.ViewHolder {
 
     public void setDueText(LocalDateTime due) {
         ((TextView)cardView.findViewById(R.id.kadaiDueText)).setText(due.format(DateTimeFormatter.ofPattern("y/M/d HH:mm")));
+        LocalDateTime now = LocalDateTime.now();
+        if (now.plusDays(RED_DAYS).isAfter(due)) {
+            setBackgroundColor(RED_COLOR);
+        } else if (now.plusDays(YELLOW_DAYS).isAfter(due)) {
+            setBackgroundColor(YELLOW_COLOR);
+        } else if (now.plusDays(GREEN_DAYS).isAfter(due)) {
+            setBackgroundColor(GREEN_COLOR);
+        } else {
+            setBackgroundColor(GRAY_COLOR);
+        }
+    }
+
+    public void setBackgroundColor(int color) {
+        cardView.setBackgroundColor(color);
     }
 
     private static final Pattern TAG_REMOVE_PATTERN = Pattern.compile("<.+?>");
+
+    public static final int RED_COLOR = Color.parseColor("#e85555");
+    public static final int YELLOW_COLOR = Color.parseColor("#d7aa57");
+    public static final int GREEN_COLOR = Color.parseColor("#62b665");
+    public static final int GRAY_COLOR = Color.parseColor("#CFCECE");
+
+    private static final int RED_DAYS = 1;
+    private static final int YELLOW_DAYS = 5;
+    private static final int GREEN_DAYS = 14;
 }

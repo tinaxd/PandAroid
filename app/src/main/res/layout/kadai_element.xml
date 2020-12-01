@@ -17,25 +17,29 @@
             android:id="@+id/kadaiNameText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="TextView" />
+            android:text="TextView"
+            android:textSize="18sp" />
 
         <TextView
             android:id="@+id/kadaiLectureText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="TextView" />
+            android:text="TextView"
+            android:textSize="18sp" />
 
         <TextView
             android:id="@+id/kadaiDescriptionText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="TextView" />
+            android:text="TextView"
+            android:textSize="18sp" />
 
         <TextView
             android:id="@+id/kadaiDueText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="TextView" />
+            android:text="TextView"
+            android:textSize="18sp" />
 
         <View
             android:layout_width="match_parent"

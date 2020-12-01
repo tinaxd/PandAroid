@@ -203,7 +203,7 @@ public class MainActivity extends AppCompatActivity {
                 .title("レポートあいうえお")
                 .lecture("実験")
                 .id("ID-1-2-3")
-                .due(LocalDateTime.now().plusDays(2))
+                .due(LocalDateTime.now().plusHours(12))
                 .description("レポートの説明です")
                 .build());
         kadais.add(new KadaiBuilder()
@@ -212,6 +212,20 @@ public class MainActivity extends AppCompatActivity {
                 .id("ID-EXP-143")
                 .due(LocalDateTime.now().plusDays(3))
                 .description("さしすせそ")
+                .build());
+        kadais.add(new KadaiBuilder()
+                .title("さしすせそ課題")
+                .lecture("英語")
+                .id("ID-EXP-123")
+                .due(LocalDateTime.now().plusDays(13))
+                .description("まだ二週間もある")
+                .build());
+        kadais.add(new KadaiBuilder()
+                .title("小テスト")
+                .lecture("フランス語")
+                .id("ID-EXP-FR")
+                .due(LocalDateTime.now().plusDays(21))
+                .description("3週間後です")
                 .build());
         return kadais;
     }

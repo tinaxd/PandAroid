@@ -207,7 +207,7 @@ public class PandAAPI implements AutoCloseable {
 		if (kadais == null) {
 			throw new MalformedKadaiJsonException("assignment_collection missing");
 		}
-		List<Kadai> result = new ArrayList();
+		List<Kadai> result = new ArrayList<>();
 		int index = 0;
 		while (kadais.has(index)) {
 			JsonNode kadai = kadais.get(index);
