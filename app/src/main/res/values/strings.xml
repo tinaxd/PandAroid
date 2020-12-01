@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">PandAroid</string>
+    <string name="action_settings">Settings</string>
+    <!-- Strings used for fragments for navigation -->
+    <string name="first_fragment_label">First Fragment</string>
+    <string name="second_fragment_label">Second Fragment</string>
+    <string name="next">Next</string>
+    <string name="previous">Previous</string>
+
+    <string name="hello_first_fragment">Hello first fragment</string>
+    <string name="hello_second_fragment">Hello second fragment. Arg: %1$s</string>
+    <string name="update_button_text">Update</string>
+    <string name="settings_button_text">Settings</string>
+    <string name="title_activity_login_info_settings">LoginInfoSettings</string>
+    <string name="ecs_id_hint">ECS-ID</string>
+    <string name="password_hint">Password</string>
+    <string name="login_settings_ok_button">OK</string>
+    <string name="keseru_setumei">空欄にしてOKを押すと, Android内のストレージから情報が消去されます.</string>
+</resources>
