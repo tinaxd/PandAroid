@@ -14,7 +14,7 @@
 
 package work.tinax.pandagui;
 
-public class PandAAPIException extends RuntimeException {
+public class PandAAPIException extends Exception {
     /**
      *
      */

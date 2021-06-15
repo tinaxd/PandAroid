@@ -23,15 +23,23 @@ public class Kadai implements Serializable {
 	private final String kadaiName;
 	private final String description;
 	private final LocalDateTime due;
+	private final boolean isQuiz;
+
+	public static final String QUIZ_ID_PREFIX = "q";
 
 	private static final long serialVersionUID = 1L;
 	
 	public Kadai(String id, String kadaiName, String lectureName, String description, LocalDateTime due) {
+		this(id, kadaiName, lectureName, description, due, false);
+	}
+
+	public Kadai(String id, String kadaiName, String lectureName, String description, LocalDateTime due, boolean isQuiz) {
 		this.id = id;
 		this.kadaiName = kadaiName;
 		this.lectureName = lectureName;
 		this.description = description;
 		this.due = due;
+		this.isQuiz = isQuiz;
 	}
 
 	public String getId() {
@@ -52,6 +60,10 @@ public class Kadai implements Serializable {
 
 	public LocalDateTime getDue() {
 		return due;
+	}
+
+	public boolean isQuiz() {
+		return isQuiz;
 	}
 	
 	/**
@@ -75,6 +87,6 @@ public class Kadai implements Serializable {
 	
 	@Override
 	public String toString() {
-		return String.format("Kadai(id=%s, name=%s, due=%s, description=%s)", id, kadaiName, due.toString(), description);
+		return String.format("Kadai(id=%s, name=%s, due=%s, description=%s, isQuiz=%s)", id, kadaiName, due.toString(), description, isQuiz);
 	}
 }

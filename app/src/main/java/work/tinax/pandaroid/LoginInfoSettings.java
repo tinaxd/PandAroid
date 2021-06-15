@@ -97,6 +97,13 @@ public class LoginInfoSettings extends AppCompatActivity {
             Log.d("login info", "put password info");
         }
 
+        if ((id == null || id.isEmpty()) && (password == null || password.isEmpty())) {
+            String text = "デバイスからログイン情報が削除されました。";
+            int duration = Toast.LENGTH_LONG;
+            Toast toast = Toast.makeText(getApplicationContext(), text, duration);
+            toast.show();
+        }
+
         boolean success = editor.commit();
         if (!success) {
             // show toast

@@ -50,6 +50,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -67,6 +68,8 @@ public class MainActivity extends AppCompatActivity {
     private Executor networkExecutor;
 
     private LocalDateTime updateTime;
+
+    public static final Version PANDAROID_VERSION = new Version(0, 1, 1);
 
     private void toggleButtons(boolean enabled) {
         ((Button)findViewById(R.id.updateButton)).setEnabled(enabled);
@@ -137,10 +140,18 @@ public class MainActivity extends AppCompatActivity {
                                         kadais.add(kadai);
                                     }
                                 }
+                                for (Kadai quiz : api.getQuiz(site.getSiteId())) {
+                                    // skip if due is before now
+                                    if (quiz.getDue().isAfter(now)) {
+                                        kadais.add(quiz);
+                                    }
+                                }
                             }
                         } catch (PandAAPIException ex) {
-                            Toast.makeText(getApplicationContext(), "通信エラー. ログイン情報を確認してください.", Toast.LENGTH_LONG)
-                                    .show();
+                            mainHandler.post(() -> {
+                                    Toast.makeText(getApplicationContext(), "通信エラー. ログイン情報を確認してください.", Toast.LENGTH_LONG)
+                                            .show();
+                            });
                         } finally {
                             mainHandler.post(new Runnable() {
                                 @Override
@@ -191,6 +202,30 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(getApplicationContext(), "キャッシュを読み込みました", Toast.LENGTH_LONG)
                     .show();
         }
+
+        UpdateChecker checker = new UpdateChecker(PANDAROID_VERSION);
+        networkExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    boolean updateAvailable = checker.isNewVersionAvailable().get();
+                    Log.i("update checker", "updateAvailable: " + updateAvailable);
+                    if (updateAvailable) {
+                        new Handler(getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(getApplicationContext(), "PandAroid の更新があります. https://tinaxd.github.io/PandAroid-updates", Toast.LENGTH_LONG)
+                                        .show();
+                            }
+                        });
+                    }
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
     private void showUpdateTime(LocalDateTime time) {

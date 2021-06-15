@@ -43,7 +43,7 @@ public class KadaiAdapter extends RecyclerView.Adapter<KadaiCard> {
     @Override
     public void onBindViewHolder(@NonNull KadaiCard holder, int position) {
         Kadai kadai = kadais.get(position);
-        holder.setTitle(kadai.getKadaiName());
+        holder.setTitle(kadai.getKadaiName(), kadai.isQuiz());
         holder.setLecture(kadai.getLectureName());
         holder.setDescription(kadai.getDescription());
         holder.setDueText(kadai.getDue());

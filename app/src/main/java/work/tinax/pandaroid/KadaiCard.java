@@ -33,8 +33,13 @@ public class KadaiCard extends RecyclerView.ViewHolder {
         cardView = itemView;
     }
 
+    public void setTitle(String title, boolean isQuiz) {
+        String quizPrefix = isQuiz ? "(クイズ) " : "";
+        ((TextView)cardView.findViewById(R.id.kadaiNameText)).setText(quizPrefix + title);
+    }
+
     public void setTitle(String title) {
-        ((TextView)cardView.findViewById(R.id.kadaiNameText)).setText(title);
+        setTitle(title, false);
     }
 
     public void setLecture(String lecture) {

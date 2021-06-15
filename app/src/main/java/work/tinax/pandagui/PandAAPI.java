@@ -14,8 +14,12 @@
 
 package work.tinax.pandagui;
 
+import android.util.Log;
+
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAccessor;
@@ -86,7 +90,7 @@ public class PandAAPI implements AutoCloseable {
 	 * @returns ログイントークンを表す文字列.
 	 * @throws PandAAPIException 取得に失敗した場合.
      */
-	public String getLoginToken() {
+	public String getLoginToken() throws PandAAPIException {
 		HttpGet get = new HttpGet("https://cas.ecs.kyoto-u.ac.jp/cas/login?service=https%3A%2F%2Fpanda.ecs.kyoto-u.ac.jp%2Fsakai-login-tool%2Fcontainer");
 		try (CloseableHttpResponse response = client.execute(get)) {
 			if (response.getCode() != 200) {
@@ -101,7 +105,7 @@ public class PandAAPI implements AutoCloseable {
 				return match.group(1);
 			}
 			throw new PandAAPIException("cannot get login token");
-		} catch (IOException | ParseException ex) {
+		} catch (IOException | ParseException | PandAAPIException ex) {
 			throw new PandAAPIException("IO error", ex);
 		}
 	}
@@ -113,7 +117,7 @@ public class PandAAPI implements AutoCloseable {
 	 * @throws PandAAPIException ログインに失敗した場合. ユーザー名やパスワードが誤っているためログインに失敗する場合は, この例外は投げられない.
 	 * @see PandAAPI#isLoggedIn()
 	 */
-	public void login(String ecsId, String password) {
+	public void login(String ecsId, String password) throws PandAAPIException {
 		String lt = getLoginToken();
 		HttpPost post = new HttpPost("https://cas.ecs.kyoto-u.ac.jp/cas/login?service=https%3A%2F%2Fpanda.ecs.kyoto-u.ac.jp%2Fsakai-login-tool%2Fcontainer");
 		// POST する内容を作成
@@ -138,7 +142,7 @@ public class PandAAPI implements AutoCloseable {
 	 * ログインしているか確認する.
 	 * @return ログインしていれば true, そうでなければ false.
 	 */
-	public boolean isLoggedIn() {
+	public boolean isLoggedIn() throws PandAAPIException {
 		HttpGet req = new HttpGet("https://panda.ecs.kyoto-u.ac.jp/portal/");
 		try (CloseableHttpResponse response = client.execute(req)) {
 			String text = EntityUtils.toString(response.getEntity());
@@ -155,7 +159,7 @@ public class PandAAPI implements AutoCloseable {
 	 * @throws PandAAPIException ログアウトできなかった場合.
 	 * すでにログアウトしていた場合は例外は投げない.
 	 */
-	public void logout() {
+	public void logout() throws PandAAPIException {
 		HttpGet req = new HttpGet("https://panda.ecs.kyoto-u.ac.jp/portal/logout");
 		try (CloseableHttpResponse response = client.execute(req)) {
 			EntityUtils.consume(response.getEntity());
@@ -202,10 +206,11 @@ public class PandAAPI implements AutoCloseable {
 	 * @return Kadai のリスト
 	 * @throws MalformedKadaiJsonException JSON の形式が無効な場合
 	 */
-	private static List<Kadai> makeKadaiListFromJson(JsonNode root, String lecture) {
+	private static List<Kadai> makeKadaiListFromJson(JsonNode root, String lecture) throws NoKadaiInfoException {
+		Log.d("makeKadaiListFromJson lecture", lecture);
 		JsonNode kadais = root.get("assignment_collection");
 		if (kadais == null) {
-			throw new MalformedKadaiJsonException("assignment_collection missing");
+			throw new NoKadaiInfoException("assignment_collection missing");
 		}
 		List<Kadai> result = new ArrayList<>();
 		int index = 0;
@@ -213,7 +218,7 @@ public class PandAAPI implements AutoCloseable {
 			JsonNode kadai = kadais.get(index);
 			String entityId = kadai.get("entityId").textValue();
 			String title = kadai.get("title").textValue();
-			LocalDateTime due = makeDateTime(kadai.get("dueTime").get("display").textValue());
+			LocalDateTime due = LocalDateTime.ofEpochSecond(kadai.get("dueTime").get("epochSecond").longValue(), 0, ZoneOffset.ofHours(9));
 			String description = kadai.get("instructions").textValue();
 			result.add(new KadaiBuilder()
 							.id(entityId)
@@ -226,6 +231,30 @@ public class PandAAPI implements AutoCloseable {
 		}
 		return result;
 	}
+
+	private static List<Kadai> makeQuizListFromJson(JsonNode root, String lecture) throws NoKadaiInfoException {
+		Log.d("makeQuizListFromJson lecture", lecture);
+		JsonNode quizRoot = root.get("sam_pub_collection");
+		if (quizRoot == null) {
+			throw new NoKadaiInfoException("sam_pub_collection missing");
+		}
+		List<Kadai> result = new ArrayList<>();
+		for (int index=0; quizRoot.has(index); index++) {
+			JsonNode quiz = quizRoot.get(index);
+			String entityId = Kadai.QUIZ_ID_PREFIX + quiz.get("publishedAssessmentId").intValue();
+			String title = quiz.get("title").textValue();
+			LocalDateTime due = LocalDateTime.ofEpochSecond(quiz.get("dueDate").longValue() / 1000L, 0, ZoneOffset.ofHours(9));
+			result.add(new KadaiBuilder()
+					.id(entityId)
+					.title(title)
+					.due(due)
+					.description("")
+					.lecture(lecture)
+					.asQuiz()
+					.build());
+		}
+		return result;
+	}
 	
 	/**
 	 * JSON 文字列から課題のリストを作成する
@@ -235,10 +264,19 @@ public class PandAAPI implements AutoCloseable {
 	 * @throws PandAAPIException t が有効な JSON でない場合
 	 * @throws MalformedKadaiJsonException t が JSON としてパースできるが, makeKadaiListFromJson が処理できる形式ではない場合
 	 */
-	private static List<Kadai> makeKadaiListFromJsonString(String t, String lecture) {
+	private static List<Kadai> makeKadaiListFromJsonString(String t, String lecture) throws PandAAPIException {
 		ObjectMapper mapper = new ObjectMapper();
 		try {
 			return makeKadaiListFromJson(mapper.readTree(t), lecture);
+		} catch (JsonProcessingException e) {
+			throw new PandAAPIException("could not parse json", e);
+		}
+	}
+
+	private static List<Kadai> makeQuizListFromJsonString(String t, String lecture) throws PandAAPIException {
+		ObjectMapper mapper = new ObjectMapper();
+		try {
+			return makeQuizListFromJson(mapper.readTree(t), lecture);
 		} catch (JsonProcessingException e) {
 			throw new PandAAPIException("could not parse json", e);
 		}
@@ -250,14 +288,35 @@ public class PandAAPI implements AutoCloseable {
 	 * @return Kadai のリスト
 	 * @throws PandAAPIException 通信エラーが発生した場合
 	 */
-	public List<Kadai> getAssignments(String siteId) {
+	public List<Kadai> getAssignments(String siteId) throws PandAAPIException {
 		updateSiteIdCache();
 		HttpGet req =
 				new HttpGet(String.format("https://panda.ecs.kyoto-u.ac.jp/direct/assignment/site/%s.json", siteId));
 		try (CloseableHttpResponse response = client.execute(req)) {
 			String lectureName = siteIdCache.getOrDefault(siteId, siteId);
-			return makeKadaiListFromJsonString(
-					EntityUtils.toString(response.getEntity()), lectureName);
+			try {
+				return makeKadaiListFromJsonString(
+						EntityUtils.toString(response.getEntity()), lectureName);
+			} catch (NoKadaiInfoException e) {
+				return new ArrayList<>();
+			}
+		} catch (ParseException | IOException e) {
+			throw new PandAAPIException("IO error", e);
+		}
+	}
+
+	public List<Kadai> getQuiz(String siteId) throws PandAAPIException {
+		updateSiteIdCache();
+		HttpGet req =
+				new HttpGet(String.format("https://panda.ecs.kyoto-u.ac.jp/direct/sam_pub/context/%s.json", siteId));
+		try (CloseableHttpResponse response = client.execute(req)) {
+			String lectureName = siteIdCache.getOrDefault(siteId, siteId);
+			try {
+				return makeQuizListFromJsonString(
+						EntityUtils.toString(response.getEntity()), lectureName);
+			} catch (NoKadaiInfoException e) {
+				return new ArrayList<>();
+			}
 		} catch (ParseException | IOException e) {
 			throw new PandAAPIException("IO error", e);
 		}
@@ -272,7 +331,7 @@ public class PandAAPI implements AutoCloseable {
 	 * @return サイトIDのリスト
 	 * @throws PandAAPIException 通信エラーが発生した場合
 	 */
-	public List<SiteIdInfo> fetchSiteIds() {
+	public List<SiteIdInfo> fetchSiteIds() throws PandAAPIException {
 		HttpGet req = new HttpGet("https://panda.ecs.kyoto-u.ac.jp/portal/");
 		try (CloseableHttpResponse response = client.execute(req)) {
 			String portal = EntityUtils.toString(response.getEntity());
@@ -297,7 +356,7 @@ public class PandAAPI implements AutoCloseable {
 		}
 	}
 	
-	private void updateSiteIdCache() {
+	private void updateSiteIdCache() throws PandAAPIException {
 		if (!siteIdCacheUpdated) {
 			fetchSiteIds();
 			siteIdCacheUpdated = true;
@@ -319,7 +378,7 @@ public class PandAAPI implements AutoCloseable {
 	 * @param log ログの出力先
 	 * @return PandAAPI オブジェクト
 	 */
-	public static PandAAPI newLogin(String ecsId, String password, LogTarget log) {
+	public static PandAAPI newLogin(String ecsId, String password, LogTarget log) throws PandAAPIException {
 		PandAAPI api = new PandAAPI(log);
 		api.login(ecsId, password);
 		return api;
@@ -331,7 +390,7 @@ public class PandAAPI implements AutoCloseable {
 	 * @param password パスワード
 	 * @return PandAAPI オブジェクト
 	 */
-	public static PandAAPI newLogin(String ecsId, String password) {
+	public static PandAAPI newLogin(String ecsId, String password) throws PandAAPIException {
 		return newLogin(ecsId, password, null);
 	}
 	
@@ -342,7 +401,7 @@ public class PandAAPI implements AutoCloseable {
 	 * @see PandAAPI#newLogin(String, String)
 	 */
 	@Override
-	public void close() {
+	public void close() throws PandAAPIException {
 		if (loginTried) {
 			logout();
 		}

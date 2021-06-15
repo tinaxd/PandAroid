@@ -25,6 +25,7 @@ public class KadaiBuilder {
 	private String titleField;
 	private LocalDateTime dueField;
 	private String descriptionField;
+	private boolean isQuiz = false;
 	
 	public KadaiBuilder id(String id) {
 		idField = id;
@@ -43,12 +44,7 @@ public class KadaiBuilder {
 	
 	public KadaiBuilder dueString(String due) {
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("%y/%M/%d %h:%m");
-		dueField = formatter.parse(due, new TemporalQuery<LocalDateTime>() {
-			@Override
-			public LocalDateTime queryFrom(TemporalAccessor temporalAccessor) {
-				return LocalDateTime.from(temporalAccessor);
-			}
-		});
+		dueField = formatter.parse(due, temporalAccessor -> LocalDateTime.from(temporalAccessor));
 		return this;
 	}
 	
@@ -61,6 +57,11 @@ public class KadaiBuilder {
 		descriptionField = description;
 		return this;
 	}
+
+	public KadaiBuilder asQuiz() {
+		isQuiz = true;
+		return this;
+	}
 	
 	/**
 	 * Kadai オブジェクトを作成する. id(), lecture(), title(), due(), description() が少なくとも一度以上事前に呼ばれている必要がある.
@@ -71,6 +72,6 @@ public class KadaiBuilder {
 		if (idField == null || lectureField == null || titleField == null || dueField == null || descriptionField == null) {
 			throw new IllegalStateException("kadai is not complete");
 		}
-		return new Kadai(idField, titleField, lectureField, descriptionField, dueField);
+		return new Kadai(idField, titleField, lectureField, descriptionField, dueField, isQuiz);
 	}
 }
