@@ -91,7 +91,7 @@ public class PandAAPI implements AutoCloseable {
 	 * @throws PandAAPIException 取得に失敗した場合.
      */
 	public String getLoginToken() throws PandAAPIException {
-		HttpGet get = new HttpGet("https://cas.ecs.kyoto-u.ac.jp/cas/login?service=https%3A%2F%2Fpanda.ecs.kyoto-u.ac.jp%2Fsakai-login-tool%2Fcontainer");
+		HttpGet get = new HttpGet("https://panda.ecs.kyoto-u.ac.jp/cas/login?service=https%3A%2F%2Fpanda.ecs.kyoto-u.ac.jp%2Fsakai-login-tool%2Fcontainer");
 		try (CloseableHttpResponse response = client.execute(get)) {
 			if (response.getCode() != 200) {
 				throw new PandAAPIException("/login not 200");
@@ -119,7 +119,7 @@ public class PandAAPI implements AutoCloseable {
 	 */
 	public void login(String ecsId, String password) throws PandAAPIException {
 		String lt = getLoginToken();
-		HttpPost post = new HttpPost("https://cas.ecs.kyoto-u.ac.jp/cas/login?service=https%3A%2F%2Fpanda.ecs.kyoto-u.ac.jp%2Fsakai-login-tool%2Fcontainer");
+		HttpPost post = new HttpPost("https://panda.ecs.kyoto-u.ac.jp/cas/login?service=https%3A%2F%2Fpanda.ecs.kyoto-u.ac.jp%2Fsakai-login-tool%2Fcontainer");
 		// POST する内容を作成
 		List<NameValuePair> form = new ArrayList();
 		form.add(new BasicNameValuePair("_eventId", "submit"));
