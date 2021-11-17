@@ -69,7 +69,9 @@ public class MainActivity extends AppCompatActivity {
 
     private LocalDateTime updateTime;
 
-    public static final Version PANDAROID_VERSION = new Version(0, 1, 1);
+    public static final Version PANDAROID_VERSION = new Version(0, 3, 0);
+
+    private StatusTextManager statusTextManager;
 
     private void toggleButtons(boolean enabled) {
         ((Button)findViewById(R.id.updateButton)).setEnabled(enabled);
@@ -91,6 +93,8 @@ public class MainActivity extends AppCompatActivity {
         kadaiAdapter = new KadaiAdapter(kadaiList);
         listView.setAdapter(kadaiAdapter);
 
+        statusTextManager = new StatusTextManager(findViewById((R.id.stateText)));
+
         ((Button)findViewById(R.id.updateButton)).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -98,7 +102,7 @@ public class MainActivity extends AppCompatActivity {
 
                 // show error message if id or password is not set.
                 if (login == null) {
-                    Toast.makeText(getApplicationContext(), "Please set ID and password", Toast.LENGTH_SHORT)
+                    Toast.makeText(getApplicationContext(), "Please set ID and password", Toast.LENGTH_LONG)
                             .show();
                     return;
                 }
@@ -113,7 +117,7 @@ public class MainActivity extends AppCompatActivity {
                         mainHandler.post(new Runnable() {
                             @Override
                             public void run() {
-                                Toast.makeText(getApplicationContext(), "接続開始", Toast.LENGTH_SHORT).show();
+                                statusTextManager.showText("接続開始");
                                 toggleButtons(false);
                             }
                         });
@@ -122,7 +126,7 @@ public class MainActivity extends AppCompatActivity {
                             mainHandler.post(new Runnable() {
                                 @Override
                                 public void run() {
-                                    Toast.makeText(getApplicationContext(), "ログイン完了", Toast.LENGTH_SHORT).show();
+                                    statusTextManager.showText("ログイン完了");
                                 }
                             });
                             for (final SiteIdInfo site : api.fetchSiteIds()) {
@@ -130,8 +134,7 @@ public class MainActivity extends AppCompatActivity {
                                 mainHandler.post(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Toast.makeText(getApplicationContext(), site.getLectureName() + "を取得中", Toast.LENGTH_SHORT)
-                                                .show();
+                                        statusTextManager.showText(site.getLectureName() + "を取得中");
                                     }
                                 });
                                 for (Kadai kadai : api.getAssignments(site.getSiteId())) {
@@ -149,8 +152,7 @@ public class MainActivity extends AppCompatActivity {
                             }
                         } catch (PandAAPIException ex) {
                             mainHandler.post(() -> {
-                                    Toast.makeText(getApplicationContext(), "通信エラー. ログイン情報を確認してください.", Toast.LENGTH_LONG)
-                                            .show();
+                                    statusTextManager.showText("通信エラー. ログイン情報を確認してください.");
                             });
                         } finally {
                             mainHandler.post(new Runnable() {
@@ -174,8 +176,7 @@ public class MainActivity extends AppCompatActivity {
                         mainHandler.post(new Runnable() {
                             @Override
                             public void run() {
-                                Toast.makeText(getApplicationContext(), "課題更新完了. 何も表示されない場合は本当に課題がないか, ログイン情報が間違っています.", Toast.LENGTH_LONG)
-                                        .show();
+                                statusTextManager.showText("課題更新完了. 何も表示されない場合は本当に課題がないか, ログイン情報が間違っています.");
                                 updateTime = LocalDateTime.now();
                                 showUpdateTime(updateTime);
                                 Log.i("update kadai", "saving kadai list to cache");
@@ -199,8 +200,7 @@ public class MainActivity extends AppCompatActivity {
         //updateKadaiList(makeSampleKadai());
 
         if (updateKadaiListFromCache()) {
-            Toast.makeText(getApplicationContext(), "キャッシュを読み込みました", Toast.LENGTH_LONG)
-                    .show();
+            statusTextManager.showText("キャッシュを読み込みました");
         }
 
         UpdateChecker checker = new UpdateChecker(PANDAROID_VERSION);
@@ -214,8 +214,7 @@ public class MainActivity extends AppCompatActivity {
                         new Handler(getMainLooper()).post(new Runnable() {
                             @Override
                             public void run() {
-                                Toast.makeText(getApplicationContext(), "PandAroid の更新があります. https://tinaxd.github.io/PandAroid-updates", Toast.LENGTH_LONG)
-                                        .show();
+                                statusTextManager.showText("PandAroid の更新があります. https://tinaxd.github.io/PandAroid-updates");
                             }
                         });
                     }

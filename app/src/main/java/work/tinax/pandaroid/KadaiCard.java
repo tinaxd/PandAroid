@@ -71,9 +71,9 @@ public class KadaiCard extends RecyclerView.ViewHolder {
 
     private static final Pattern TAG_REMOVE_PATTERN = Pattern.compile("<.+?>");
 
-    public static final int RED_COLOR = Color.parseColor("#e85555");
-    public static final int YELLOW_COLOR = Color.parseColor("#d7aa57");
-    public static final int GREEN_COLOR = Color.parseColor("#62b665");
+    public static final int RED_COLOR = Color.parseColor("#ffa3a3");
+    public static final int YELLOW_COLOR = Color.parseColor("#ffffb7");
+    public static final int GREEN_COLOR = Color.parseColor("#a3ffa3");
     public static final int GRAY_COLOR = Color.parseColor("#CFCECE");
 
     private static final int RED_DAYS = 1;
